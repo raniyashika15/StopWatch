@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pomodoro Clock</title>
+  <style>
+    body {
+      background: #181818;
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      width: 220px;
+      height: 460px;
+      background: rgba(40, 40, 60, 0.92);
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .upper {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.7rem;
+      font-family: 'Courier New', Courier, monospace;
+      background: rgba(0,0,0,0.12);
+      letter-spacing: 2px;
+      border-bottom: 1px solid #333;
+    }
+    .upper span {
+      font-size: 1.1rem;
+      color: #b3b3b3;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .lower {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px 18px 18px 18px;
+      height: 100%;
+    }
+    .set-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .set-label {
+      font-size: 1rem;
+      margin-bottom: 6px;
+      color: #b3b3b3;
+    }
+    .set-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .set-controls button {
+      background: #232323;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .set-controls button:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+    }
+    .set-controls span {
+      font-size: 1.3rem;
+      min-width: 32px;
+      text-align: center;
+      display: inline-block;
+    }
+    .bottom-btns {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 18px;
+    }
+    .bottom-btns button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      padding: 8px 22px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .bottom-btns button:active {
+      background: #0056b3;
+    }
+    .bottom-btns button:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="upper">
+      <span id="modeLabel">Session</span>
+      <div id="countdown">25:00</div>
+    </div>
+    <div class="lower">
+      <div class="set-section">
+        <div class="set-label">Session Time (min)</div>
+        <div class="set-controls">
+          <button id="sessionDec">-</button>
+          <span id="sessionVal">25</span>
+          <button id="sessionInc">+</button>
+        </div>
+      </div>
+      <div class="set-section">
+        <div class="set-label">Break Time (min)</div>
+        <div class="set-controls">
+          <button id="breakDec">-</button>
+          <span id="breakVal">5</span>
+          <button id="breakInc">+</button>
+        </div>
+      </div>
+      <div class="bottom-btns">
+        <button id="startBtn">Start</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    let sessionTime = 25;
+    let breakTime = 5;
+    let isSession = true;
+    let running = false;
+    let timer = null;
+    let timeLeft = sessionTime * 60;
+
+    const sessionVal = document.getElementById('sessionVal');
+    const breakVal = document.getElementById('breakVal');
+    const sessionDec = document.getElementById('sessionDec');
+    const sessionInc = document.getElementById('sessionInc');
+    const breakDec = document.getElementById('breakDec');
+    const breakInc = document.getElementById('breakInc');
+    const countdown = document.getElementById('countdown');
+    const modeLabel = document.getElementById('modeLabel');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function updateDisplay() {
+      sessionVal.textContent = sessionTime;
+      breakVal.textContent = breakTime;
+      let min = Math.floor(timeLeft / 60);
+      let sec = timeLeft % 60;
+      countdown.textContent = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+      modeLabel.textContent = isSession ? 'Session' : 'Break';
+    }
+
+    function setBtnsDisabled(disabled) {
+      sessionDec.disabled = disabled;
+      sessionInc.disabled = disabled;
+      breakDec.disabled = disabled;
+      breakInc.disabled = disabled;
+    }
+
+    sessionDec.onclick = function() {
+      if (!running && sessionTime > 0) {
+        sessionTime--;
+        timeLeft = sessionTime * 60;
+        updateDisplay();
+      }
+    };
+    sessionInc.onclick = function() {
+      if (!running) {
+        sessionTime++;
+        timeLeft = sessionTime * 60;
+        updateDisplay();
+      }
+    };
+    breakDec.onclick = function() {
+      if (!running && breakTime > 0) {
+        breakTime--;
+        updateDisplay();
+      }
+    };
+    breakInc.onclick = function() {
+      if (!running) {
+        breakTime++;
+        updateDisplay();
+      }
+    };
+
+    function tick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateDisplay();
+      } else {
+        isSession = !isSession;
+        timeLeft = (isSession ? sessionTime : breakTime) * 60;
+        updateDisplay();
+      }
+    }
+
+    startBtn.onclick = function() {
+      if (!running) {
+        running = true;
+        setBtnsDisabled(true);
+        startBtn.disabled = true;
+        timer = setInterval(tick, 1000);
+      }
+    };
+
+    resetBtn.onclick = function() {
+      running = false;
+      clearInterval(timer);
+      setBtnsDisabled(false);
+      startBtn.disabled = false;
+      isSession = true;
+      timeLeft = sessionTime * 60;
+      updateDisplay();
+    };
+
+    updateDisplay();
+  </script>
+</body>
+</html>
